@@ -1,0 +1,436 @@
+
+Installing Oracle Database 11g Release 2
+Step 1: Install Oracle Dependencies
+
+We use “oracle-rdbms-server-11gR2-preinstall” package offered by “Oracle Public Yum” repository. The Oracle public yum repository provides a free and easiest way to install all the latest Oracle Linux dependencies automatically. To setup yum repository, follow the instructions provided below.
+
+Use “wget” command to Download appropriate yum configuration file under /etc/yum.repos.d/ directory as root user.
+
+RHEL/CentOs 6.x
+
+# cd /etc/yum.repos.d
+# wget https://public-yum.oracle.com/public-yum-ol6.repo
+RHEL/CentOs 5.x
+
+# cd /etc/yum.repos.d
+# wget https://public-yum.oracle.com/public-yum-el5.repo
+RHEL/CentOs 4.x
+
+# cd /etc/yum.repos.d
+# wget https://public-yum.oracle.com/public-yum-el4.repo
+Now perform the following “yum” command to install all the necessary prerequisites automatically.
+
+[root@oracle]# yum install oracle-rdbms-server-11gR2-preinstall
+
+ 
+While importing GPG key, you might get “GPG key retrieval failed” error as shown below. Here, you need to import proper GPG key for your OS release.
+
+Retrieving key from file:///etc/pki/rpm-gpg/RPM-GPG-KEY-oracle
+GPG key retrieval failed: [Errno 14] Could not open/read file:///etc/pki/rpm-gpg/RPM-GPG-KEY-oracle
+Download and verify the appropriate Oracle Linux GPG Key that best matches your RHEL/CentOS compatible OS release.
+
+RHEL/CentOs 6.x
+
+# wget https://public-yum.oracle.com/RPM-GPG-KEY-oracle-ol6 -O /etc/pki/rpm-gpg/RPM-GPG-KEY-oracle
+RHEL/CentOs 5.x
+
+# wget https://public-yum.oracle.com/RPM-GPG-KEY-oracle-el5 -O /etc/pki/rpm-gpg/RPM-GPG-KEY-oracle
+RHEL/CentOs 4.x
+
+# wget https://public-yum.oracle.com/RPM-GPG-KEY-oracle-el4 -O /usr/share/rhn/RPM-GPG-KEY-oracle
+Step 2: Setting Hostname
+
+Open the “/etc/sysconfig/network” file and modify the HOSTNAME to match your FQDN (Fully Qualified Domain Name) host name.
+
+[root@oracle]# vi /etc/sysconfig/network
+HOSTNAME=oracle.tecmint.com
+Open “/etc/hosts” file and add fully qualified hostname for the server.
+
+[root@oracle]# vi /etc/hosts
+192.168.246.128		oracle.tecmint.com		oracle
+Now you need to restart networking on the server to make sure that changes will be persistent on reboot.
+
+[root@oracle]# /etc/init.d/network restart
+Step 3: Oracle User Settings
+
+Set the password for the “oracle” user.
+
+[root@oracle]# passwd oracle
+Changing password for user oracle.
+New password:
+BAD PASSWORD: it is based on a dictionary word
+Retype new password:
+passwd: all authentication tokens updated successfully.
+Add the entry to file “/etc/security/limits.d/90-nproc.conf” as described below.
+
+[root@oracle]# vi /etc/security/limits.d/90-nproc.conf
+# Default limit for number of user's processes to prevent
+# accidental fork bombs.
+# See rhbz #432903 for reasoning.
+*          soft    nproc     1024
+# To this
+* - nproc 16384
+Set SELinux to “permissive” mode by editing the file “/etc/selinux/config“.
+
+[root@oracle]# vi /etc/selinux/config
+SELINUX=permissive
+Once you’ve made change, don’t forger to restart the server to reflect new changes.
+
+[root@oracle]# reboot
+Login as Oracle user and open file “.bash_profile“, which is available on oracle user’s home directory, make an entries as described below. Make sure you set correct hostname to “ORACLE_HOSTNAME=oracle.tecmint.com“.
+
+[root@oracle]# su oracle
+[oracle@oracle ~]$ vi .bash_profile
+# Oracle Settings
+TMP=/tmp; export TMP
+TMPDIR=$TMP; export TMPDIR
+ORACLE_HOSTNAME=oracle.tecmint.com; export ORACLE_HOSTNAME
+ORACLE_UNQNAME=DB11G; export ORACLE_UNQNAME
+ORACLE_BASE=/u01/app/oracle; export ORACLE_BASE
+ORACLE_HOME=$ORACLE_BASE/product/11.2.0/dbhome_1; export ORACLE_HOME
+ORACLE_SID=DB11G; export ORACLE_SID
+PATH=/usr/sbin:$PATH; export PATH
+PATH=$ORACLE_HOME/bin:$PATH; export PATH
+LD_LIBRARY_PATH=$ORACLE_HOME/lib:/lib:/usr/lib; export LD_LIBRARY_PATH
+CLASSPATH=$ORACLE_HOME/jlib:$ORACLE_HOME/rdbms/jlib; export CLASSPATH export PATH
+Switch to root user and issue the following command to allow Oracle user to access X Server.
+
+[root@oracle]# xhost +
+Create the directories and set the appropriate permissions in which the Oracle software will be installed.
+
+[root@oracle]# mkdir -p /u01/app/oracle/product/11.2.0/dbhome_1
+[root@oracle]# chown -R oracle:oinstall /u01
+[root@oracle]# chmod -R 775 /u01
+Step 4: Downloading Oracle Software
+
+Sign-up and Download the Oracle software using the following link.
+
+Oracle Database 11g Release 2
+Download Oracle 11g Release 2
+Download Oracle 11g Release 2
+The Oracle package contains 2 zip files which you must first accept the license agreement before downloading. I’ve given the files names for you reference, please download these files for your system architecture somewhere under “/home/oracle/“.
+
+For Linux x86 Systems
+
+http://download.oracle.com/otn/linux/oracle11g/R2/linux_11gR2_database_1of2.zip
+http://download.oracle.com/otn/linux/oracle11g/R2/linux_11gR2_database_2of2.zip
+For Linux x86-64 Systems
+
+http://download.oracle.com/otn/linux/oracle11g/R2/linux.x64_11gR2_database_1of2.zip
+http://download.oracle.com/otn/linux/oracle11g/R2/linux.x64_11gR2_database_2of2.zip
+Step 5: Oracle Installation
+
+Now let’s start Oracle installation. First of all need to switch as ‘oracle’ user to install database.
+
+[oracle@oracle ~]$ su oracle
+Extract compressed Oracle database source files to the same directory “/home/oracle/“.
+
+[oracle@oracle ~]$ unzip linux_11gR2_database_1of2.zip
+[oracle@oracle ~]$ unzip linux_11gR2_database_2of2.zip
+Post unzip source file, directory called database will be created, go to inside the directory and execute below script to start Oracle database installation process.
+
+[oracle@oracle database]$ cd database
+[oracle@oracle database]$ ./runInstaller
+1. RunInstaller will call Oracle Universal Installer (OUI), wherein look and feel & steps are the same across all the operating system.
+
+Oracle Universal Installer 
+Oracle Universal Installer
+2. Provide your email address to be informed of security issues and receive security updates.
+
+Configure Security Updates
+Configure Oracle Security Updates
+3. Create and Configure a Database
+
+Create Oracle Database
+Create Oracle Database
+4. Choose the system class, either Desktop or Server.
+
+Select System Class
+Select Oracle System Class
+5. Select the type of database installation you want to perform.
+
+Oracle Node Selection
+Select Database Installation Type
+6. Select “Typical install” option to install full oracle installation with basic configuration.
+
+Select Oracle Install Type
+Select Typical Install
+7. Set Administrative password and perform full Database installation with basic configuration.
+
+Oracle Typical Installation Configuration
+Set Oracle Administrative Password
+8. Please click on “Yes” to continue with installation.
+
+Oracle Typical Install Configuration
+Typical Install Configuration Confirm
+9. Create Inventory
+
+Create Oracle Inventory
+Create Inventory
+10. If you faced prerequisites warning during installation. Click on “Fix & Check Again“. Oracle fixes Prerequisites by itself. This is the new feature of Oracle Database 11g.
+
+Perform Prerequisite Checks
+Perform Prerequisite Checks
+The pdksh package is not available in Oracle repository due to which you need to download and install it manually.
+
+[root@oracle]# wget ftp://rpmfind.net/linux/redhat-archive/6.2/en/os/i386/RedHat/RPMS/pdksh-5.2.14-2.i386.rpm
+During pdksh package installation you may encountered conflict error of ksh package. Remove ksh package forcefully and install the pdksh package with given below command:-
+
+[root@oracle]# rpm -e ksh-20100621-19.el6_4.4.i686 --nodeps
+[root@oracle]# rpm -ivh pdksh-5.2.14-2.i386.rpm
+11. Performing Prerequisite checks: It’s test whether sufficient total SWAP space is available on the system.
+
+Performing Prerequisite SWAP Check
+Performing Prerequisite SWAP Check
+12. Installation Summary: Click on Save Response File. This file is useful for Oracle Silent Mode Installation
+
+Oracle Installation Summary
+Oracle Installation Summary
+13. Save Response File somewhere in your system.
+
+Save Response File
+Save Response File
+14. Product Installation Progress
+
+Install Oracle Product
+Product Install
+15. Copying database files
+
+Copying Database Files 
+Copying Database Files
+16. Click on “Password Management“.
+
+Oracle Password Management
+Oracle Password Management
+17. Set password for user “SYS” and click on OK to continue.
+
+Set SYS User Password 
+Set SYS User Password
+18. Configuration scripts need to be executed as the “root” user. Go to the path given in the screen and execute the scripts one by one. Click on ‘OK‘ once scripts is executed.
+
+Execute Configuration Scripts
+Execute Configuration Scripts
+[root@oracle]# cd /u01/app/oraInventory
+[root@oracle oraInventory]# ./orainstRoot.sh
+Changing permissions of /u01/app/oraInventory.
+Adding read,write permissions for group.
+Removing read,write,execute permissions for world.
+Changing groupname of /u01/app/oraInventory to oinstall.
+The execution of the script is complete.
+[root@oracle]# cd /u01/app/oracle/product/11.2.0/dbhome_2/
+[root@oracle dbhome_2]# ./root.sh
+Running Oracle 11g root.sh script...
+The following environment variables are set as:
+ORACLE_OWNER= oracle
+ORACLE_HOME=  /u01/app/oracle/product/11.2.0/dbhome_2
+Enter the full pathname of the local bin directory: [/usr/local/bin]:
+Copying dbhome to /usr/local/bin ...
+Copying oraenv to /usr/local/bin ...
+Copying coraenv to /usr/local/bin ...
+Creating /etc/oratab file...
+Entries will be added to the /etc/oratab file as needed by
+Database Configuration Assistant when a database is created
+Finished running generic part of root.sh script.
+Now product-specific root actions will be performed.
+Finished product-specific root actions.
+19. The installation of Oracle Database is successful.
+
+Oracle Installation Completed
+Oracle Installation Finish
+20. To test your Oracle installation navigate to web based management interface for your system at “localhost” with the user name “SYS” connecting as “SYSDBA” and using the password you set during the install of Oracle. Remember to open port 1158 on your firewall and restart the iptables service.
+
+[root@oracle]# iptables -A INPUT -p tcp --dport 1158 -j ACCEPT
+[root@oracle]# service iptables restart
+https://localhost:1158/em/
+Oracle Enterprise Manager Login
+Oracle Enterprise Manager Login
+21. Oracle Enterprise Database Control Manager
+
+Oracle Database Control Manager
+Oracle Database Control Manager
+Now you can start using Oracle. I highly recommend you to follow the Oracle Documentation for more help. There are number of client applications out there which can help you, like the command line tool called Oracle Instant Client and the Oracle SQL Developer UI program.
+
+This is end of the Oracle Database Software Installation. In our upcoming article we will be covering how to create database using DBCA and how to Start-up and Shutdown Oracle Database. Please stay tuned…!!!
+
+SHARE
++
++
+Ask Anything
+If You Appreciate What We Do Here On TecMint, You Should Consider:
+Stay Connected to: Twitter | Facebook | Google Plus
+Subscribe to our email updates: Sign Up Now
+Get your own self-hosted blog with a Free Domain at ($3.95/month).
+Become a Supporter - Make a contribution via PayPal
+Support us by purchasing our premium books in PDF format.
+Support us by taking our online Linux courses
+We are thankful for your never ending support.
+View all Posts
+Narad Shrestha
+He has over 10 years of rich IT experience which includes various Linux Distros, FOSS and Networking. Narad always believes sharing IT knowledge with others and adopts new technology with ease.
+
+Your name can also be listed here. Got a tip? Submit it here to become an TecMint author.
+
+RedHat RHCE and RHCSA Certification Book Linux Foundation LFCS and LFCE Certification Preparation Guide  
+NEXT STORY
+How to Setup NFS (Network File System) on RHEL/CentOS/Fedora and Debian/Ubuntu
+PREVIOUS STORY
+Xnoise 0.2.19 Media Player Relased – Install in Ubuntu, Linux Mint and Fedora
+YOU MAY ALSO LIKE...
+
+ Oracle 12c Installation in Centos
+39
+Installing and Configuring Oracle 12c in RHEL/CentOS/Oracle Linux 6.5 – Part II
+
+2 OCT, 2014
+ Setting Up Prerequisites for Oracle
+16
+Setting Up Prerequisites for Oracle 12c Installation in RHEL/CentOS/Oracle Linux 6.5 – Part I
+
+25 SEP, 2014
+ Install Oracle 12c on CentOS 7
+0
+How to Install Oracle Database 12c on RHEL/CentOS 7
+
+4 JUL, 2017
+60 RESPONSES
+
+Comments10
+Pingbacks0
+Harsh  February 16, 2017 at 3:44 pm
+I tried installing on Cent0S 6.6, Getting below error at 6th step of installation :
+
+[INS-32021 ]Insufficient disk space on this volume for selected Oracle home
+Output of df -h looks like :
+
+Filesystem      Size  Used Avail Use% Mounted on
+/dev/sda2        18G   14G  3.1G  82% /
+Reply
+Ravi Saive  February 17, 2017 at 3:09 pm
+@Harsh,
+
+Free up some space and see, I think Oracle needs more space for installation..
+
+Reply
+Hugo González  October 21, 2016 at 12:57 am
+Excellent, I installed it on CentOS 6.8 and this step by step work correctly.
+
+Congratulations on this article.
+
+Regards,
+Hugo González
+Caracas,
+Venezuela
+
+Reply
+Julio Reyes  September 29, 2016 at 3:45 am
+Seems that wget https://public-yum.oracle.com/public-yum-ol6.repo is not working anymore
+
+Reply
+Ravi Saive  September 29, 2016 at 10:50 am
+@Julio,
+
+The repository is working fine, I just checked the repo and its showing the content as:
+
+[ol6_latest]
+name=Oracle Linux $releasever Latest ($basearch)
+baseurl=http://yum.oracle.com/repo/OracleLinux/OL6/latest/$basearch/
+gpgkey=file:///etc/pki/rpm-gpg/RPM-GPG-KEY-oracle
+gpgcheck=1
+enabled=1
+[ol6_addons]
+name=Oracle Linux $releasever Add ons ($basearch)
+baseurl=http://yum.oracle.com/repo/OracleLinux/OL6/addons/$basearch/
+gpgkey=file:///etc/pki/rpm-gpg/RPM-GPG-KEY-oracle
+gpgcheck=1
+enabled=0
+...
+Reply
+Kamal  September 15, 2016 at 1:39 pm
+Hello Sir,
+
+if we choose the option of Install software only at during the installation of Oracle 11G data base after which command is used to create the database.
+
+Can you help to sort out my query.
+
+Reply
+Raju  July 31, 2016 at 7:46 pm
+Hi narad,
+
+I am getting the dependency errors while installing Oracle 11g on CentOS 7
+can you help me how to solve these issues
+
+Thanks in advance
+
+Reply
+Ravi Saive  August 1, 2016 at 11:23 am
+@Raju,
+
+What dependency errors you getting on the screen while installing Oracle 11g? could you share the error output with us? so that we can help you out.
+
+Reply
+elem  April 9, 2016 at 8:31 am
+Hello Everyone.
+
+Good day.
+
+I am new to Oracle and I am on the way of installing Oracle Database 12C. I would like just like to know if the files that I have download [linuxamd64_12c_database_1of2.zip and linuxamd64_12c_database_2of2.zip ] can be also installed in the Linux Server RHEL 6.7 just all using all the terminal? Because what I saw in the internet is that they do it in the terminal and then after some configurations, there will be a GUI for to continue the installation.. With my case, I am just connecting to server located remotely using ssh..
+
+Please advise.
+
+Thanks in advance for the help
+
+Reply
+Narad  April 9, 2016 at 6:33 pm
+login thru xmanager exporting display to local system…this should work
+
+Reply
+« Older Comments
+GOT SOMETHING TO SAY? JOIN THE DISCUSSION.
+
+Comment
+
+Name *
+
+Email *
+
+Website
+
+ Notify me of followup comments via e-mail. You can also subscribe without commenting.
+Post Comment
+LINUX MONITORING TOOLS
+Glances – An Advanced Real Time System Monitoring Tool for Linux
+SARG – Squid Analysis Report Generator and Internet Bandwidth Monitoring Tool
+How to Monitor Apache Web Server Load and Page Statistics
+Install Fping ICMP Program on RHEL/CentOS 6/5/4
+Web VMStat: A Real Time System Statistics (Memory, CPU, Processess, etc) Monitoring Tool for Linux
+LINUX INTERVIEW QUESTIONS
+15 Interview Questions on Linux “ls” Command – Part 1
+10 Useful ‘ls’ Command Interview Questions – Part 2
+10 Basic Interview Questions and Answers on Linux Networking – Part 1
+10 Useful ‘Interview Questions and Answers’ on Linux Shell Scripting
+25 Apache Interview Questions for Beginners and Intermediates
+OPEN SOURCE TOOLS
+9 Best File Comparison and Difference (Diff) Tools for Linux
+4 Best Linux Boot Loaders
+4 Best Linux Apps for Downloading Movie Subtitles
+10 Top Open Source Artificial Intelligence Tools for Linux
+8 Best Video Editing Softwares I Discovered for Linux
+Donate to TecMint
+ 
+Contact Us
+ 
+Advertise on TecMint
+ 
+Linux Services
+ 
+Copyright Policy
+ 
+Privacy Policy
+ 
+Career
+ 
+Sponsored Post
+Tecmint: Linux Howtos, Tutorials & Guides © 2017. All Rights Reserved.
+This work is licensed under a (cc) BY-NC
+The material in this site cannot be republished either online or offline, without our permission.
+4 Free Shell Scripting eBooks for Newbies and Administrators
